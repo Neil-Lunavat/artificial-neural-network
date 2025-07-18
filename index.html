@@ -315,8 +315,38 @@
             function setup() {
                 canvas = createCanvas(280, 280); // 28 squares × 10px = 280px
                 canvas.parent("canvas-container");
+
+                // Mouse events for desktop
                 canvas.mousePressed(startDrawing);
                 canvas.mouseReleased(stopDrawing);
+
+                // Touch events for mobile
+                canvas.touchStarted(startDrawing);
+                canvas.touchEnded(stopDrawing);
+
+                // Prevent default touch behaviors that interfere with drawing
+                canvas.elt.addEventListener(
+                    "touchstart",
+                    function (e) {
+                        e.preventDefault();
+                    },
+                    { passive: false }
+                );
+                canvas.elt.addEventListener(
+                    "touchmove",
+                    function (e) {
+                        e.preventDefault();
+                    },
+                    { passive: false }
+                );
+                canvas.elt.addEventListener(
+                    "touchend",
+                    function (e) {
+                        e.preventDefault();
+                    },
+                    { passive: false }
+                );
+
                 background(255);
 
                 // Draw grid overlay
@@ -342,12 +372,28 @@
             }
 
             function draw() {
-                if (isDrawing && mouseIsPressed) {
-                    line(mouseX, mouseY, pmouseX, pmouseY);
+                // Support both mouse and touch drawing
+                let drawing = false;
+                let x, y, px, py;
+                if (isDrawing && touches.length > 0) {
+                    drawing = true;
+                    x = touches[0].x;
+                    y = touches[0].y;
+                    px = touches[0].px !== undefined ? touches[0].px : x;
+                    py = touches[0].py !== undefined ? touches[0].py : y;
+                } else if (isDrawing && mouseIsPressed) {
+                    drawing = true;
+                    x = mouseX;
+                    y = mouseY;
+                    px = pmouseX;
+                    py = pmouseY;
+                }
+                if (drawing) {
+                    line(px, py, x, y);
 
-                    // Update drawing data - map mouse position to 28x28 grid
-                    const gridX = Math.floor(mouseX / 10); // Each square is 10px
-                    const gridY = Math.floor(mouseY / 10);
+                    // Update drawing data - map position to 28x28 grid
+                    const gridX = Math.floor(x / 10); // Each square is 10px
+                    const gridY = Math.floor(y / 10);
 
                     if (gridX >= 0 && gridX < 28 && gridY >= 0 && gridY < 28) {
                         const index = gridY * 28 + gridX;
